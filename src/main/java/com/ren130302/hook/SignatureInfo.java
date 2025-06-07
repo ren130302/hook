@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
-public final record SignatureInfo(Signature signature) {
+public record SignatureInfo(Signature signature) {
 
   private static final Collector<CharSequence, ?, String> JOINING_COMMA = Collectors.joining(", ");
 

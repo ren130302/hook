@@ -5,7 +5,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.UndeclaredThrowableException;
 
-public final record HookHandler(Object target, HookInfo hookInfo) implements InvocationHandler {
+public record HookHandler(Object target, HookInfo hookInfo) implements InvocationHandler {
 
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {

@@ -7,10 +7,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public final record HookInfo(Hook hook, HookDefine define,
-    Map<SignatureInfo, Method> signatureInfos, Map<Class<?>, Set<Method>> signatureMap)
-// implements Comparable<HookInfo>
-{
+public record HookInfo(Hook hook, HookDefine define, Map<SignatureInfo, Method> signatureInfos,
+    Map<Class<?>, Set<Method>> signatureMap) {
 
   private Class<?>[] getHookableInterfacesForTarget(Class<?> type) {
     Set<Class<?>> interfaces = new HashSet<>();
