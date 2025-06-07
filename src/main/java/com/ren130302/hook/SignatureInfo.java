@@ -32,13 +32,10 @@ public final record SignatureInfo(Signature signature) {
 
   @Override
   public String toString() {
-    Class<?> targetClass = this.type();
-    Class<?> declaringClass = targetClass.getDeclaringClass();
-    Class<?>[] paramTypes = this.paramTypes();
-
-    String className = declaringClass.getName();
+    String className = this.type().getName();
     String methodName = this.name();
-    String paramTypeNames = Arrays.stream(paramTypes).map(Class::getName).collect(JOINING_COMMA);
+    String paramTypeNames =
+        Arrays.stream(this.paramTypes()).map(Class::getName).collect(JOINING_COMMA);
 
     return "Signature[" + className + "#" + methodName + "(" + paramTypeNames + ")]";
   }

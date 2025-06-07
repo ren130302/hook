@@ -9,22 +9,30 @@ import java.util.Set;
 
 public final record HookInfo(Hook hook, HookDefine define,
     Map<SignatureInfo, Method> signatureInfos, Map<Class<?>, Set<Method>> signatureMap)
-    implements Comparable<HookInfo> {
+// implements Comparable<HookInfo>
+{
 
   private Class<?>[] getHookableInterfacesForTarget(Class<?> type) {
     Set<Class<?>> interfaces = new HashSet<>();
 
     while (type != null) {
-      for (Class<?> c : type.getInterfaces()) {
-        if (this.signatureMap.containsKey(c)) {
-          interfaces.add(c);
+      for (Class<?> iface : type.getInterfaces()) {
+        if (this.signatureMap.containsKey(iface)) {
+          interfaces.add(iface);
         }
       }
       type = type.getSuperclass();
     }
-
     return interfaces.toArray(new Class<?>[0]);
   }
+
+  public boolean isTargetMethod(Method method) {
+    Class<?> declaringClass = method.getDeclaringClass();
+    Set<Method> methods = this.signatureMap.get(declaringClass);
+
+    return methods != null && methods.contains(method);
+  }
+
 
   @SuppressWarnings("unchecked")
   public <T> T plugin(T target) {
@@ -45,15 +53,6 @@ public final record HookInfo(Hook hook, HookDefine define,
     return this.define.value();
   }
 
-  public byte priority() {
-    return this.define.priority();
-  }
-
-  @Override
-  public int compareTo(HookInfo o) {
-    return Byte.compare(this.priority(), o.priority());
-  }
-
   public static HookInfo from(Hook hook, Set<Class<?>> hookableInterfaces) {
     Class<?> hookClass = hook.getClass();
     HookDefine define = hookClass.getAnnotation(HookDefine.class);
@@ -70,8 +69,9 @@ public final record HookInfo(Hook hook, HookDefine define,
       Class<?> type = signature.type();
 
       if (!hookableInterfaces.contains(type)) {
-        throw new IllegalArgumentException(
-            "Unsupported target type: " + type.getName() + " at " + hookClass.getName());
+        throw new IllegalArgumentException("Unsupported target type: " + type.getName() + " in "
+            + hookClass.getName() + ". Allowed types: " + hookableInterfaces);
+
       }
 
       SignatureInfo signatureInfo = new SignatureInfo(signature);
@@ -85,4 +85,5 @@ public final record HookInfo(Hook hook, HookDefine define,
 
     return new HookInfo(hook, define, Map.copyOf(signatureInfos), Map.copyOf(signatureMap));
   }
+
 }
