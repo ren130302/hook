@@ -5,14 +5,15 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.UndeclaredThrowableException;
 
-public record HookHandler(Object target, HookInfo hookInfo) implements InvocationHandler {
+public record HookHandler(Object target, HookDescriptor hookDescriptor)
+    implements InvocationHandler {
 
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
     try {
-      if (this.hookInfo.isTargetMethod(method)) {
+      if (this.hookDescriptor.isTargetMethod(method)) {
         Invocation invocation = new Invocation(this.target, method, args);
-        return this.hookInfo.hook().intercept(invocation);
+        return this.hookDescriptor.getHook().apply(invocation);
       }
 
       return method.invoke(this.target, args);

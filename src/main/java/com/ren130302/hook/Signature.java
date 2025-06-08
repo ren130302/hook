@@ -1,19 +1,20 @@
 package com.ren130302.hook;
 
 import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({})
+@Target(ElementType.ANNOTATION_TYPE)
 public @interface Signature {
 
-  String name();
+  Class<?> declaringType();
 
-  Class<?>[] paramTypes();
+  String methodName();
 
-  Class<?> type();
+  Class<?>[] parameterTypes();
 
 }
