@@ -38,7 +38,7 @@ public final class HookManager {
     Objects.requireNonNull(hooks, "hooks must not be null");
 
     for (Hook hook : hooks) {
-      this.hooks.add(HookDescriptor.factory(this, hook));
+      this.hooks.add(HookDescriptorFactory.create(this, hook));
     }
   }
 

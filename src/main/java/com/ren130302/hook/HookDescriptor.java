@@ -1,102 +1,53 @@
 package com.ren130302.hook;
 
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
+import java.util.WeakHashMap;
 
 public final class HookDescriptor {
 
-  public static HookDescriptor factory(HookManager hookManager, Hook hook) {
-    return new HookDescriptor(hookManager, hook);
-  }
-
-  private final HookManager hookManager;
   private final Hook hook;
-  private final Map<Class<?>, Set<Method>> signatureMap = new HashMap<>();
-  private final Map<Signature, Method> resolvedMethods = new HashMap<>();
+  private final MethodRegistry methodRegistry;
 
-  public HookDescriptor(HookManager hookManager, Hook hook) {
-    this.hookManager = Objects.requireNonNull(hookManager, "hookManager");
-    this.hook = Objects.requireNonNull(hook, "hook");
+  private final Map<Class<?>, Class<?>[]> interfaceCache = new WeakHashMap<>();
 
-    HookDefine hookDefine = this.getHookDefine();
-    for (Signature signature : hookDefine.value()) {
-      this.resolve(signature);
-    }
-  }
-
-  public HookDefine getHookDefine() {
-    Class<? extends Hook> hookClass = this.hook.getClass();
-    HookDefine hookDefine = hookClass.getAnnotation(HookDefine.class);
-
-    if (hookDefine == null) {
-      throw new IllegalStateException(
-          "Could not find @HookDefine annotation : " + hookClass.getName());
-    }
-
-    return hookDefine;
+  public HookDescriptor(Hook hook, MethodRegistry methodRegistry) {
+    this.hook = hook;
+    this.methodRegistry = methodRegistry;
   }
 
   public Class<?>[] getHookableInterfacesForTarget(Class<?> type) {
-    Set<Class<?>> interfaces = new HashSet<>();
-    Set<Class<?>> seen = new HashSet<>();
-
-    while (type != null) {
-      for (Class<?> iface : type.getInterfaces()) {
-        if (seen.add(iface) && this.signatureMap.containsKey(iface)) {
-          interfaces.add(iface);
-        }
-      }
-      type = type.getSuperclass();
-    }
-
-    return interfaces.toArray(new Class<?>[0]);
-  }
-
-
-  public Method resolve(Signature signature) {
-    Class<?> declaringType = signature.declaringType();
-
-    if (!this.hookManager.isAllowedInterface(declaringType)) {
-      throw new IllegalArgumentException("Unsupported target type: " + declaringType.getName()
-          + " in " + this.hook.getClass().getName() + ". Allowed types: "
-          + this.hookManager.getAllowedInterfaces().stream().map(Class::getName).toList());
-    }
-
-    Method method = this.resolvedMethods.computeIfAbsent(signature, MethodResolver::resolve);
-    Set<Method> methods = this.signatureMap.computeIfAbsent(declaringType, t -> new HashSet<>());
-    methods.add(method);
-    return method;
+    return this.interfaceCache.computeIfAbsent(type,
+        t -> InterfaceCollector.collect(t, this.methodRegistry.getSignatureMap()));
   }
 
   public boolean isTargetMethod(Method method) {
-    Class<?> declaringClass = method.getDeclaringClass();
-    Set<Method> methods = this.signatureMap.get(declaringClass);
-
-    return methods != null && methods.contains(method);
+    return this.methodRegistry.containsMethod(method);
   }
 
-  @SuppressWarnings("unchecked")
   public <T> T apply(T target) {
-    Class<?> targetClass = target.getClass();
-    Class<?>[] interfaces = this.getHookableInterfacesForTarget(targetClass);
-
-    if (interfaces.length > 0) {
-      ClassLoader loader = targetClass.getClassLoader();
-      HookHandler plugin = new HookHandler(target, this);
-
-      return (T) Proxy.newProxyInstance(loader, interfaces, plugin);
-    }
-
-    return target;
+    return HookProxyFactory.createIfApplicable(target, this);
   }
 
   public Hook getHook() {
     return this.hook;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == this) {
+      return true;
+    }
+    if (!(obj instanceof HookDescriptor that)) {
+      return false;
+    }
+    return this.hook.equals(that.hook);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(this.hook);
   }
 
 }
