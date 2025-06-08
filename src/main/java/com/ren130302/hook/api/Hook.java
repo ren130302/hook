@@ -1,4 +1,4 @@
-package com.ren130302.hook;
+package com.ren130302.hook.api;
 
 public interface Hook {
 

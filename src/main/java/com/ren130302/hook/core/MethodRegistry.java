@@ -1,12 +1,14 @@
-package com.ren130302.hook;
+package com.ren130302.hook.core;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import com.ren130302.hook.api.Signature;
+import com.ren130302.hook.util.MethodResolver;
 
-public final class MethodRegistry {
+final class MethodRegistry {
   private final HookManager hookManager;
   private final Map<Class<?>, Set<Method>> signatureMap = new HashMap<>();
   private final Map<Signature, Method> resolvedMethods = new HashMap<>();

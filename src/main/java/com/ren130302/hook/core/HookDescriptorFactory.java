@@ -1,8 +1,11 @@
-package com.ren130302.hook;
+package com.ren130302.hook.core;
 
 import java.util.Objects;
+import com.ren130302.hook.api.Hook;
+import com.ren130302.hook.api.HookDefine;
+import com.ren130302.hook.api.Signature;
 
-public final class HookDescriptorFactory {
+final class HookDescriptorFactory {
 
   private HookDescriptorFactory() {}
 

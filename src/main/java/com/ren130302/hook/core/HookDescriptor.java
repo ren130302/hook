@@ -1,11 +1,13 @@
-package com.ren130302.hook;
+package com.ren130302.hook.core;
 
 import java.lang.reflect.Method;
 import java.util.Map;
 import java.util.Objects;
 import java.util.WeakHashMap;
+import com.ren130302.hook.api.Hook;
+import com.ren130302.hook.util.InterfaceCollector;
 
-public final class HookDescriptor {
+final class HookDescriptor {
 
   private final Hook hook;
   private final MethodRegistry methodRegistry;

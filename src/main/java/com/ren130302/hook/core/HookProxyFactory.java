@@ -1,8 +1,8 @@
-package com.ren130302.hook;
+package com.ren130302.hook.core;
 
 import java.lang.reflect.Proxy;
 
-public final class HookProxyFactory {
+final class HookProxyFactory {
 
   private HookProxyFactory() {}
 

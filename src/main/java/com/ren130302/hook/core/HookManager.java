@@ -1,9 +1,10 @@
-package com.ren130302.hook;
+package com.ren130302.hook.core;
 
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.ServiceLoader;
 import java.util.Set;
+import com.ren130302.hook.api.Hook;
 
 public final class HookManager {
 
