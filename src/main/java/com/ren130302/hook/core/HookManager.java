@@ -18,7 +18,9 @@ public final class HookManager {
       allowedInterfaces.add(iface);
     }
 
-    return new HookManager(Set.copyOf(allowedInterfaces));
+    final HookManager hookManager = new HookManager(Set.copyOf(allowedInterfaces));
+    hookManager.addHooksFromServiceLoader();
+    return hookManager;
   }
 
 
@@ -29,26 +31,22 @@ public final class HookManager {
     this.allowedInterfaces = allowedInterfaces;
   }
 
-  public void addHooksFromServiceLoader() {
+  public void addHooks(Hook... hooks) {
+    Objects.requireNonNull(hooks, "hooks must not be null");
+
+    for (Hook hook : hooks) {
+      this.hooks.add(HookDescriptor.create(this, hook));
+    }
+  }
+
+  private void addHooksFromServiceLoader() {
     for (Hook hook : ServiceLoader.load(Hook.class)) {
       this.addHooks(hook);
     }
   }
 
-  public void addHooks(Hook... hooks) {
-    Objects.requireNonNull(hooks, "hooks must not be null");
-
-    for (Hook hook : hooks) {
-      this.hooks.add(HookDescriptorFactory.create(this, hook));
-    }
-  }
-
   public boolean isAllowedInterface(Class<?> type) {
     return this.allowedInterfaces.contains(type);
-  }
-
-  public Set<Class<?>> getAllowedInterfaces() {
-    return Set.copyOf(this.allowedInterfaces);
   }
 
   public <T> T pluginAll(T target) {

@@ -1,39 +1,102 @@
 package com.ren130302.hook.core;
 
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import com.ren130302.hook.api.Hook;
-import com.ren130302.hook.util.InterfaceCollector;
+import com.ren130302.hook.api.HookDefine;
+import com.ren130302.hook.api.Signature;
 
 final class HookDescriptor {
 
+  private static final Map<Signature, Method> RESOLVED_METHODS_CACHE = new ConcurrentHashMap<>();
+
+  public static HookDescriptor create(HookManager hookManager, Hook hook) {
+    Objects.requireNonNull(hookManager, "hookManager must not be null");
+    Objects.requireNonNull(hook, "hook must not be null");
+    Map<Class<?>, Set<Method>> signatureMap = new HashMap<>();
+
+    HookDefine hookDefine = extractHookDefine(hook);
+
+    for (Signature signature : hookDefine.value()) {
+      Class<?> declaringType = signature.declaringType();
+      if (!hookManager.isAllowedInterface(declaringType)) {
+        throw new IllegalArgumentException("Unsupported target type: " + declaringType);
+      }
+
+      Method method = RESOLVED_METHODS_CACHE.computeIfAbsent(signature, HookDescriptor::resolve);
+      Set<Method> methods = signatureMap.computeIfAbsent(declaringType, t -> new HashSet<>());
+      methods.add(method);
+    }
+
+    Map<Class<?>, Set<Method>> immutableSignatureMap = signatureMap.entrySet().stream()
+        .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, e -> Set.copyOf(e.getValue())));
+
+    return new HookDescriptor(hook, immutableSignatureMap);
+  }
+
+  static HookDefine extractHookDefine(Hook hook) {
+    HookDefine hookDefine = hook.getClass().getAnnotation(HookDefine.class);
+    if (hookDefine == null) {
+      throw new IllegalStateException(
+          "Could not find @HookDefine annotation: " + hook.getClass().getName());
+    }
+    return hookDefine;
+  }
+
+  static Method resolve(Signature signature) {
+    try {
+      Class<?> declaringType = signature.declaringType();
+      String methodName = signature.methodName();
+      Class<?>[] parameterTypes = signature.parameterTypes();
+      Method method = declaringType.getMethod(methodName, parameterTypes);
+
+      return method;
+    } catch (NoSuchMethodException e) {
+      throw new IllegalArgumentException(
+          "Could not find method for signature : " + signature + ". Cause: " + e, e);
+    }
+  }
+
   private final Hook hook;
-  private final MethodRegistry methodRegistry;
+  private final Map<Class<?>, Set<Method>> signatureMap;
 
   private final Map<Class<?>, Class<?>[]> interfaceCache = new WeakHashMap<>();
 
-  public HookDescriptor(Hook hook, MethodRegistry methodRegistry) {
+  private HookDescriptor(Hook hook, Map<Class<?>, Set<Method>> signatureMap) {
     this.hook = hook;
-    this.methodRegistry = methodRegistry;
+    this.signatureMap = signatureMap;
   }
 
-  public Class<?>[] getHookableInterfacesForTarget(Class<?> type) {
-    return this.interfaceCache.computeIfAbsent(type,
-        t -> InterfaceCollector.collect(t, this.methodRegistry.getSignatureMap()));
-  }
-
-  public boolean isTargetMethod(Method method) {
-    return this.methodRegistry.containsMethod(method);
-  }
-
+  @SuppressWarnings("unchecked")
   public <T> T apply(T target) {
-    return HookProxyFactory.createIfApplicable(target, this);
+    Class<?> targetClass = target.getClass();
+    Class<?>[] interfaces =
+        this.interfaceCache.computeIfAbsent(targetClass, this::collectInterfaces);
+
+    if (interfaces.length == 0) {
+      return target;
+    }
+
+    ClassLoader loader = targetClass.getClassLoader();
+    HookHandler handler = new HookHandler(target, this);
+
+    return (T) Proxy.newProxyInstance(loader, interfaces, handler);
   }
 
-  public Hook getHook() {
-    return this.hook;
+  public boolean containsClass(Class<?> iface) {
+    return this.signatureMap.containsKey(iface);
+  }
+
+  public boolean containsMethod(Method method) {
+    return this.signatureMap.getOrDefault(method.getDeclaringClass(), Set.of()).contains(method);
   }
 
   @Override
@@ -44,12 +107,33 @@ final class HookDescriptor {
     if (!(obj instanceof HookDescriptor that)) {
       return false;
     }
-    return this.hook.equals(that.hook);
+    return this.hook.getClass().equals(that.hook.getClass());
+  }
+
+  public Hook getHook() {
+    return this.hook;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(this.hook);
+    return Objects.hash(this.hook.getClass());
   }
+
+  Class<?>[] collectInterfaces(Class<?> type) {
+    Set<Class<?>> interfaces = new HashSet<>();
+    Set<Class<?>> seen = new HashSet<>();
+
+    while (type != null) {
+      for (Class<?> iface : type.getInterfaces()) {
+        if (seen.add(iface) && this.containsClass(iface)) {
+          interfaces.add(iface);
+        }
+      }
+      type = type.getSuperclass();
+    }
+
+    return interfaces.toArray(new Class<?>[0]);
+  }
+
 
 }
