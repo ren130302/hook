@@ -6,15 +6,14 @@ import java.lang.reflect.Method;
 import java.lang.reflect.UndeclaredThrowableException;
 import com.ren130302.hook.api.Invocation;
 
-public record HookHandler(Object target, HookDescriptor hookDescriptor)
-    implements InvocationHandler {
+record HookHandler(Object target, HookDescriptor hookDescriptor) implements InvocationHandler {
 
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
     try {
       if (this.hookDescriptor.containsMethod(method)) {
         Invocation invocation = new Invocation(this.target, method, args);
-        return this.hookDescriptor.getHook().apply(invocation);
+        return this.hookDescriptor.applyHook(invocation);
       }
 
       return method.invoke(this.target, args);

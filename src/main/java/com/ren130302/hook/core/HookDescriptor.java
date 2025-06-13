@@ -12,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import com.ren130302.hook.api.Hook;
 import com.ren130302.hook.api.HookDefine;
+import com.ren130302.hook.api.Invocation;
 import com.ren130302.hook.api.Signature;
 
 final class HookDescriptor {
@@ -110,8 +111,8 @@ final class HookDescriptor {
     return this.hook.getClass().equals(that.hook.getClass());
   }
 
-  public Hook getHook() {
-    return this.hook;
+  public Object applyHook(Invocation invocation) throws Throwable {
+    return this.hook.apply(invocation);
   }
 
   @Override
