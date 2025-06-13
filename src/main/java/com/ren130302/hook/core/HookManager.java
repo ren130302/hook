@@ -19,9 +19,7 @@ public final class HookManager {
       allowedInterfaces.add(iface);
     }
 
-    final HookManager hookManager = new HookManager(Set.copyOf(allowedInterfaces));
-    hookManager.addHooksFromServiceLoader();
-    return hookManager;
+    return new HookManager(Set.copyOf(allowedInterfaces));
   }
 
 
@@ -48,7 +46,7 @@ public final class HookManager {
     }
   }
 
-  private void addHooksFromServiceLoader() {
+  public void addHooksFromServiceLoader() {
     for (Hook hook : ServiceLoader.load(Hook.class)) {
       this.addHooks(hook);
     }
