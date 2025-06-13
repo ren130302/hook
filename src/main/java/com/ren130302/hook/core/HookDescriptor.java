@@ -121,11 +121,11 @@ final class HookDescriptor {
 
   Class<?>[] collectInterfaces(Class<?> type) {
     Set<Class<?>> interfaces = new HashSet<>();
-    Set<Class<?>> seen = new HashSet<>();
+    Set<Class<?>> visitedClass = new HashSet<>();
 
     while (type != null) {
       for (Class<?> iface : type.getInterfaces()) {
-        if (seen.add(iface) && this.containsClass(iface)) {
+        if (visitedClass.add(iface) && this.containsClass(iface)) {
           interfaces.add(iface);
         }
       }
@@ -134,6 +134,5 @@ final class HookDescriptor {
 
     return interfaces.toArray(new Class<?>[0]);
   }
-
 
 }

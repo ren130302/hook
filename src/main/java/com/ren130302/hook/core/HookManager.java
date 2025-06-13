@@ -1,5 +1,6 @@
 package com.ren130302.hook.core;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.ServiceLoader;
@@ -27,8 +28,16 @@ public final class HookManager {
   private final Set<Class<?>> allowedInterfaces;
   private final Set<HookDescriptor> hooks = new HashSet<>();
 
-  public HookManager(Set<Class<?>> allowedInterfaces) {
+  private HookManager(Set<Class<?>> allowedInterfaces) {
     this.allowedInterfaces = allowedInterfaces;
+  }
+
+  public void addHooks(Collection<Hook> hooks) {
+    Objects.requireNonNull(hooks, "hooks must not be null");
+
+    for (Hook hook : hooks) {
+      this.hooks.add(HookDescriptor.create(this, hook));
+    }
   }
 
   public void addHooks(Hook... hooks) {
