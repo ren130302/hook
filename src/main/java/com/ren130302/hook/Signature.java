@@ -1,4 +1,4 @@
-package com.ren130302.hook.api;
+package com.ren130302.hook;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -8,11 +8,13 @@ import java.lang.annotation.Target;
 
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface HookDefine {
+@Target(ElementType.ANNOTATION_TYPE)
+public @interface Signature {
 
-  int priority();
+  Class<?> declaringType();
 
-  Signature[] value();
+  String methodName();
+
+  Class<?>[] parameterTypes() default {};
 
 }

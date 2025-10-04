@@ -1,4 +1,4 @@
-package com.ren130302.hook.core;
+package com.ren130302.hook;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -8,9 +8,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import com.ren130302.hook.api.Hook;
-import com.ren130302.hook.api.HookDefine;
-import com.ren130302.hook.api.Signature;
 
 public record HookMetadata(Class<? extends Hook> hookClass, HookDefine hookDefine,
     Map<Class<?>, Set<Method>> knownMethods) {
@@ -24,7 +21,7 @@ public record HookMetadata(Class<? extends Hook> hookClass, HookDefine hookDefin
 
     Map<Class<?>, Set<Method>> knownMethods = new HashMap<>();
 
-    Signature[] signatures = hookDefine.value();
+    Signature[] signatures = hookDefine.signatures();
     Objects.requireNonNull(signatures, "signatures must not be null");
 
     for (Signature signature : signatures) {
@@ -47,7 +44,7 @@ public record HookMetadata(Class<? extends Hook> hookClass, HookDefine hookDefin
   }
 
   public Signature[] getSignatures() {
-    return this.hookDefine.value().clone();
+    return this.hookDefine.signatures().clone();
   }
 
   public boolean containsClass(Class<?> iface) {
@@ -72,5 +69,7 @@ public record HookMetadata(Class<? extends Hook> hookClass, HookDefine hookDefin
           declaringType.getName(), methodName, Arrays.toString(parameterTypes)), e);
     }
   }
+
+
 
 }

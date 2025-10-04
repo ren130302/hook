@@ -1,4 +1,4 @@
-package com.ren130302.hook.core;
+package com.ren130302.hook;
 
 import java.lang.reflect.Proxy;
 import java.util.Collections;
@@ -7,17 +7,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import com.ren130302.hook.api.Hook;
-import com.ren130302.hook.api.HookDefine;
-import com.ren130302.hook.api.HookHandler;
-import com.ren130302.hook.api.HookManager;
-import com.ren130302.hook.api.Invocation;
+import com.ren130302.hook.jdk.DefaultHookHandler;
 
-public record HookDefineInfo(Hook hook, HookMetadata hookMetadata) {
+public record HookDescriptor(Hook hook, HookMetadata hookMetadata)
+    implements Comparable<HookDescriptor> {
 
   private static final Map<Class<?>, Set<Class<?>>> CACHE_INTERFACES = new ConcurrentHashMap<>();
 
-  public static HookDefineInfo extract(AllowedInterfaceRegistry allowedInterfaceRegistry,
+  public static HookDescriptor extract(AllowedInterfaceRegistry allowedInterfaceRegistry,
       Hook hook) {
     Class<?> hookClass = hook.getClass();
     HookDefine hookDefine = hookClass.getAnnotation(HookDefine.class);
@@ -25,11 +22,11 @@ public record HookDefineInfo(Hook hook, HookMetadata hookMetadata) {
     Objects.requireNonNull(hookDefine,
         "Could not find @HookDefine annotation: " + hookClass.getName());
     HookMetadata hookMetadata = HookMetadata.of(hook);
-    return new HookDefineInfo(hook, hookMetadata);
+    return new HookDescriptor(hook, hookMetadata);
   }
 
 
-  public Set<Class<?>> collectInterfaces(Class<?> type) {
+  private static Set<Class<?>> collectInterfaces(Class<?> type) {
     return CACHE_INTERFACES.computeIfAbsent(type, t -> {
       Set<Class<?>> interfaces = new HashSet<>();
 
@@ -46,13 +43,13 @@ public record HookDefineInfo(Hook hook, HookMetadata hookMetadata) {
   }
 
   public boolean isTargetClass(Class<?> target) {
-    return !this.collectInterfaces(target).isEmpty();
+    return !HookDescriptor.collectInterfaces(target).isEmpty();
   }
 
   @SuppressWarnings("unchecked")
   public <T> T bind(T target) {
     Class<?> targetClass = target.getClass();
-    Set<Class<?>> collected = this.collectInterfaces(targetClass);
+    Set<Class<?>> collected = HookDescriptor.collectInterfaces(targetClass);
 
     if (collected.isEmpty()) {
       return target;
@@ -60,7 +57,7 @@ public record HookDefineInfo(Hook hook, HookMetadata hookMetadata) {
 
     Class<?>[] interfaces = collected.toArray(new Class[0]);
     ClassLoader loader = targetClass.getClassLoader();
-    HookHandler handler = new HookHandlerImpl(target, this);
+    HookHandler handler = new DefaultHookHandler(target, this);
     Object proxyInstance = Proxy.newProxyInstance(loader, interfaces, handler);
 
     return (T) proxyInstance;
@@ -69,4 +66,26 @@ public record HookDefineInfo(Hook hook, HookMetadata hookMetadata) {
   public void initHook(HookManager hookManager) {
     this.hook().init(hookManager);
   }
+
+  @Override
+  public int compareTo(HookDescriptor that) {
+    return Integer.compare(this.hookMetadata.getPriority(), that.hookMetadata.getPriority());
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof HookDescriptor that)) {
+      return false;
+    }
+    return this.hook().getClass().equals(that.hook().getClass());
+  }
+
+  @Override
+  public int hashCode() {
+    return this.hook().getClass().hashCode();
+  }
+
 }

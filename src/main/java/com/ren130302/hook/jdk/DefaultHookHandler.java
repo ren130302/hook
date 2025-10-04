@@ -1,23 +1,27 @@
-package com.ren130302.hook.core;
+package com.ren130302.hook.jdk;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.UndeclaredThrowableException;
-import com.ren130302.hook.api.HookHandler;
-import com.ren130302.hook.api.Invocation;
+import com.ren130302.hook.DefaultInvocation;
+import com.ren130302.hook.HookDescriptor;
+import com.ren130302.hook.HookHandler;
+import com.ren130302.hook.HookHandlerException;
+import com.ren130302.hook.Invocation;
 
-public record HookHandlerImpl(Object target, HookDefineInfo hookDefineInfo) implements HookHandler {
+public record DefaultHookHandler(Object target, HookDescriptor hookDefineInfo)
+    implements HookHandler {
 
   @Override
   public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    Invocation invocation = new DefaultInvocation(this.target, method, args);
     try {
       if (this.hookDefineInfo.hookMetadata().containsMethod(method)) {
-        Invocation invocation = new InvocationImpl(this.target, method, args);
         return this.hookDefineInfo.applyHook(invocation);
       }
-      return method.invoke(this.target, args);
+      return invocation.proceed();
     } catch (Exception e) {
-      throw unwrapThrowable(e);
+      throw new HookHandlerException("Signature :" + invocation, unwrapThrowable(e));
     }
   }
 

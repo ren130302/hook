@@ -1,4 +1,4 @@
-package com.ren130302.hook.api;
+package com.ren130302.hook;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

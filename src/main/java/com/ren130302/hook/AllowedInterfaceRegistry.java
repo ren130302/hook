@@ -1,4 +1,4 @@
-package com.ren130302.hook.core;
+package com.ren130302.hook;
 
 import java.util.Collection;
 import java.util.HashSet;
